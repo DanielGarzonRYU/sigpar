@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SIGPAR</title>
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <script src="assets/js/tema.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-logo">P</div>
+        <div><b>SIGPAR</b><small id="empresa">Gestión de Parqueaderos</small></div>
+      </div>
+      <nav class="nav" id="nav"></nav>
+      <div class="sidebar-foot">SIGPAR 1.1, web y app conectadas</div>
+    </aside>
+    <div class="sidebar-bg" id="sidebarBg"></div>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menú"></button>
+        <div class="title" id="pageTitle"></div>
+        <div class="grow"></div>
+        <span class="live" id="live">En vivo</span>
+        <div class="sede-select" id="sedeBox" title="Sede">
+          <span class="muted small">Sede</span>
+          <select id="sedeSel" aria-label="Seleccionar sede"></select>
+        </div>
+        <button class="icon-btn" id="bellBtn" aria-label="Alertas de abonados"></button>
+        <div style="position:relative"><button class="icon-btn" id="ayudaBtn" aria-label="Ayuda y guías"></button></div>
+        <button class="icon-btn hide-m" id="themeBtn" aria-label="Cambiar tema"></button>
+        <div class="user-chip" id="userChip" tabindex="0">
+          <div class="avatar" id="avatar"></div>
+          <div class="who"><div id="userName"></div><small id="userRole"></small></div>
+        </div>
+      </header>
+      <main class="content" id="view"></main>
+    </div>
+  </div>
+
+  <script src="assets/vendor/chart.umd.min.js" defer></script>
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

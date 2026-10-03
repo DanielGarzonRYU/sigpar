@@ -1,0 +1,27 @@
+# Caché del navegador:
+# - HTML, JS y CSS se revalidan en cada visita (con ETag, así que si no cambiaron no se descargan de nuevo).
+#   Así, al publicar una versión nueva, todos los usuarios la ven de inmediato.
+# - Imágenes: 30 días. Librerías (vendor): 30 días, ver assets/vendor/.htaccess.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|css)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(svg|png|jpg|ico|woff2?)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "same-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+# Compresión (reduce el peso de las librerías y del JSON)
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+Options -Indexes
+
+# Archivos ocultos nunca se sirven
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>

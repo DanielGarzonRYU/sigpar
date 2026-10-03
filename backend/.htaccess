@@ -1,0 +1,2 @@
+# El código del servidor nunca se sirve directamente: solo se usa a través de public/api/index.php
+Require all denied

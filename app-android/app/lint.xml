@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- targetSdk 36 (Android 16) es intencional: es la versión probada. Subir a 37 activa comportamientos
+         nuevos de Android 17 que deben probarse antes en un dispositivo con esa versión. -->
+    <issue id="OldTargetApi" severity="informational" />
+    <!-- Falso positivo: el ícono adaptativo debe ir en mipmap-anydpi-v26 aunque minSdk sea 26
+         (sin el sufijo, AAPT2 no lo encuentra y la compilación falla). -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/mipmap-anydpi-v26" />
+    </issue>
+</lint>

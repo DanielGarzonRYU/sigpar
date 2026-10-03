@@ -1,0 +1,6 @@
+# Librerías externas (Chart.js, SheetJS, jsPDF): no cambian, se guardan 30 días en el navegador.
+<IfModule mod_headers.c>
+  <FilesMatch "\.js$">
+    Header set Cache-Control "public, max-age=2592000, immutable"
+  </FilesMatch>
+</IfModule>

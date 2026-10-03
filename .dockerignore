@@ -1,0 +1,10 @@
+.git
+.env
+*.pem
+documentos
+.playwright-mcp
+iniciar-local.bat
+dev-router.php
+.github
+
+app-android

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema base del sistema; los colores de la interfaz los define Compose (ui/theme) -->
+    <style name="Theme.Sigpar" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/fondo</item>
+        <item name="android:statusBarColor">@color/barra</item>
+    </style>
+    <color name="fondo">#F3F5F9</color>
+    <color name="barra">#0F1A2E</color>
+    <color name="icono_fondo">#1D4ED8</color>
+</resources>

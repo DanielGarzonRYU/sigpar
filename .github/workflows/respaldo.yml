@@ -1,0 +1,45 @@
+# Copia de seguridad automática de la base de datos (gratis con GitHub Actions).
+# - Se ejecuta cada domingo a las 3:00 a. m. (hora Colombia) y también a mano: Actions → "Respaldo de la base de datos" → Run workflow.
+# - Guarda un archivo .sql.gz como "artifact" privado del repositorio durante 90 días.
+# - Requiere estos "secrets" del repositorio (Settings → Secrets and variables → Actions):
+#   DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_SSL_CA (contenido completo de ca.pem de Aiven)
+name: Respaldo de la base de datos
+
+on:
+  schedule:
+    - cron: '0 8 * * 0'   # 08:00 UTC = 03:00 Colombia, cada domingo
+  workflow_dispatch:
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar cliente MySQL
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mysql-client
+
+      - name: Exportar la base de datos
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          MYSQL_PWD: ${{ secrets.DB_PASS }}
+          DB_SSL_CA: ${{ secrets.DB_SSL_CA }}
+        run: |
+          printf '%s\n' "$DB_SSL_CA" > ca.pem
+          ARCHIVO="sigpar-$(date -u +%Y-%m-%d).sql.gz"
+          mysqldump --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" \
+            --ssl-ca=ca.pem --ssl-mode=VERIFY_CA \
+            --single-transaction --no-tablespaces --set-gtid-purged=OFF --routines \
+            "$DB_NAME" | gzip -9 > "$ARCHIVO"
+          rm -f ca.pem
+          test "$(gzip -cd "$ARCHIVO" | head -c 100 | wc -c)" -gt 0
+          echo "ARCHIVO=$ARCHIVO" >> "$GITHUB_ENV"
+          ls -lh "$ARCHIVO"
+
+      - name: Guardar el respaldo (90 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVO }}
+          path: ${{ env.ARCHIVO }}
+          retention-days: 90

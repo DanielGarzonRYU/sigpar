@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SIGPAR, iniciar sesión</title>
+  <meta name="description" content="SIGPAR - Sistema de Gestión de Parqueaderos">
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <script src="assets/js/tema.js"></script>
+</head>
+<body>
+  <div class="login">
+    <section class="login-hero">
+      <div class="brand" style="padding:0">
+        <div class="brand-logo">P</div>
+        <div><b>SIGPAR</b><small>Sistema de Gestión de Parqueaderos</small></div>
+      </div>
+      <div>
+        <h1>Cada espacio, cada placa, cada peso.</h1>
+        <p>Entradas y salidas con cobro automático, abonados y reportes de todas sus sedes. Lo que registra el operador en la app aparece aquí al instante.</p>
+      </div>
+      <div class="hero-mapa" id="heroMapa" aria-hidden="true"></div>
+      <div class="pie">Universidad ECCI, proyecto SIGPAR 2026</div>
+    </section>
+
+    <section class="login-form">
+      <form id="form" novalidate>
+        <div class="login-marca"><div class="brand-logo">P</div>SIGPAR</div>
+        <h2>Iniciar sesión</h2>
+        <p class="muted" style="margin:0 0 22px">Ingrese con su correo y contraseña.</p>
+        <div id="msg"></div>
+        <div class="stack">
+          <label class="f"><span>Correo electrónico</span>
+            <input class="input" type="email" name="email" autocomplete="username" required placeholder="usuario@sigpar.co">
+          </label>
+          <label class="f"><span>Contraseña</span>
+            <input class="input" type="password" name="password" autocomplete="current-password" required placeholder="Su contraseña">
+          </label>
+          <button class="btn primary lg block" type="submit" id="btn">Ingresar</button>
+          <p class="small muted center" style="margin:4px 0 0">¿Olvidó su contraseña? Pídale a su administrador que la restablezca desde <b>Usuarios</b>.</p>
+        </div>
+        <div class="demo-box hidden" id="demo">
+          <b>Cuentas de demostración</b> (clave <span class="mono">Sigpar2026*</span>):<br>
+          <button type="button" data-u="admin@sigpar.co">Superadmin</button>,
+          <button type="button" data-u="gerente@sigpar.co">Administrador</button>,
+          <button type="button" data-u="operador1@sigpar.co">Operador Centro</button> o
+          <button type="button" data-u="operador2@sigpar.co">Operador Norte</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script type="module" src="assets/js/login.js"></script>
+</body>
+</html>

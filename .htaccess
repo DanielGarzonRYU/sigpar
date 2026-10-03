@@ -1,0 +1,22 @@
+# Protección si el proyecto se copia completo dentro de htdocs (XAMPP):
+# solo la carpeta public/ es accesible desde el navegador. backend/, docs/, .env, etc. quedan bloqueados.
+# (En Render/Docker la raíz web ya es public/, así que este archivo no se usa allí.)
+
+# Archivos ocultos (.env, .git, .htaccess…) nunca se sirven
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # La raíz del proyecto lleva a la aplicación (la ruta se toma de la URL pedida, sirve en cualquier subcarpeta)
+  RewriteCond %{REQUEST_URI} ^(.*/)$
+  RewriteRule ^$ %1public/ [R=302,L]
+  # Cualquier cosa fuera de public/ → prohibido
+  RewriteRule ^(?!public(/|$)) - [F,L]
+</IfModule>
+
+# Si mod_rewrite no estuviera disponible, al menos se bloquea todo lo que no sea public/
+<IfModule !mod_rewrite.c>
+  Require all denied
+</IfModule>

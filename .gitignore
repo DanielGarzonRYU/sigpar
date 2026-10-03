@@ -1,0 +1,28 @@
+# Claves y configuración local: NUNCA subir
+.env
+*.pem
+
+# Documentos del proyecto académico (se manejan aparte)
+documentos/
+
+# Varios
+.playwright-mcp/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# App Android
+app-android/.gradle/
+app-android/build/
+app-android/app/build/
+app-android/local.properties
+app-android/.idea/
+*.apk
+*.keystore
+*.jks
+
+# Bóveda de Obsidian creada dentro del proyecto (no es parte de SIGPAR)
+/SIGPARK_WEB/
+.obsidian/

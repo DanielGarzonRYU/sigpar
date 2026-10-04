@@ -6,7 +6,56 @@
  */
 final class DemoData
 {
+    /**
+     * Con la base en la nube (Aiven) cada consulta es un viaje de ida y vuelta de ~0,2 s: por eso se escribe
+     * en bloques (espacios y movimientos de a 200 filas) y las tarifas se leen una sola vez. Todo va en una
+     * transacción: si la carga se interrumpe no queda a medias y se vuelve a intentar completa.
+     */
     public static function seed(): void
+    {
+        @set_time_limit(0);
+        ignore_user_abort(true);
+        Db::tx(fn() => self::cargar());
+    }
+
+    private const CORREOS_DEMO = ['gerente@sigpar.co', 'operador1@sigpar.co', 'operador2@sigpar.co'];
+
+    /**
+     * ¿Quedó a medias una carga de demostración anterior (versiones viejas cargaban sin transacción y podían
+     * cortarse a los 30 s)? Solo es "sí" si TODO indica que la base es de demostración: nunca terminó la carga,
+     * las únicas sedes son las de demo y no hay más usuarios que el superadministrador y las cuentas de demo.
+     */
+    public static function incompleta(): bool
+    {
+        if (Db::value("SELECT id FROM auditoria WHERE accion = 'carga_demo' LIMIT 1")) return false;
+        $sedes = array_column(Db::all('SELECT nombre FROM sedes'), 'nombre');
+        if (!$sedes || array_diff($sedes, ['Sede Centro', 'Sede Norte'])) return false;
+        $otros = (int) Db::value("SELECT COUNT(*) FROM usuarios WHERE rol <> 'superadmin' AND email NOT IN (?,?,?)", self::CORREOS_DEMO);
+        return $otros === 0;
+    }
+
+    /** Borra lo que dejó una carga de demostración interrumpida, para volver a cargarla completa. */
+    public static function limpiarIncompleta(): void
+    {
+        Db::tx(function () {
+            foreach (['movimientos', 'abonado_pagos', 'abonados', 'tarifas', 'espacios', 'usuario_sede'] as $t) Db::exec("DELETE FROM $t");
+            Db::exec('DELETE FROM usuarios WHERE email IN (?,?,?)', self::CORREOS_DEMO);
+            Db::exec('DELETE FROM sedes');
+        });
+        error_log('[SIGPAR] Se encontró una carga de demostración incompleta: se limpió para cargarla de nuevo.');
+    }
+
+    /** Inserta muchas filas en pocas consultas. */
+    private static function enBloque(string $tabla, array $columnas, array $filas, string $extra = ''): void
+    {
+        foreach (array_chunk($filas, 200) as $bloque) {
+            $marcas = '(' . implode(',', array_fill(0, count($columnas), '?')) . ')';
+            Db::exec("INSERT INTO $tabla (" . implode(',', $columnas) . ') VALUES ' . implode(',', array_fill(0, count($bloque), $marcas)) . $extra,
+                array_merge(...$bloque));
+        }
+    }
+
+    private static function cargar(): void
     {
         mt_srand(2026);
         $pass = password_hash('Sigpar2026*', PASSWORD_DEFAULT);
@@ -20,10 +69,12 @@ final class DemoData
             $sid = Db::insert('INSERT INTO sedes (nombre, direccion, telefono) VALUES (?,?,?)', [$nombre, $dir, $tel]);
             $sedeIds[] = $sid;
             $i = 0;
+            $filasEsp = [];
             foreach (['carro' => 'C', 'moto' => 'M', 'bicicleta' => 'B'] as $tipo => $pref) {
-                for ($n = 1; $n <= $espacios[$tipo]; $n++) {
-                    Db::exec('INSERT INTO espacios (sede_id, codigo, tipo_vehiculo) VALUES (?,?,?)', [$sid, sprintf('%s-%02d', $pref, $n), $tipo]);
-                }
+                for ($n = 1; $n <= $espacios[$tipo]; $n++) $filasEsp[] = [$sid, sprintf('%s-%02d', $pref, $n), $tipo];
+            }
+            self::enBloque('espacios', ['sede_id', 'codigo', 'tipo_vehiculo'], $filasEsp);
+            foreach (['carro', 'moto', 'bicicleta'] as $tipo) {
                 Db::exec(
                     'INSERT INTO tarifas (sede_id, tipo_vehiculo, modo_cobro, valor_fraccion, valor_hora, fraccion_minutos, minutos_gracia, tope_dia, valor_mensualidad) VALUES (?,?,?,?,?,?,?,?,?)',
                     [$sid, $tipo, $modos[$i], match ($modos[$i]) { 'minuto' => round($hora[$i] / 60 / 5) * 5, 'hora' => $hora[$i], default => $hora[$i] / 4 },
@@ -78,6 +129,10 @@ final class DemoData
         $pesosHora = [0,0,0,0,0,1,3,8,9,6,4,4,6,6,4,3,4,6,7,4,2,1,1,0];
         $metodos = ['efectivo', 'efectivo', 'efectivo', 'tarjeta', 'transferencia', 'app'];
         foreach ($sedeIds as $sid) {
+            // Tarifas de la sede leídas una vez (antes era una consulta por cada movimiento)
+            $tarifas = [];
+            foreach (['carro', 'moto', 'bicicleta'] as $t) $tarifas[$t] = Parking::tarifa($sid, $t);
+            $historicos = [];
             $espacios = Db::all('SELECT id, tipo_vehiculo FROM espacios WHERE sede_id = ?', [$sid]);
             $porTipo = [];
             foreach ($espacios as $e) $porTipo[$e['tipo_vehiculo']][] = (int) $e['id'];
@@ -99,14 +154,11 @@ final class DemoData
                     if (strtotime($salida) <= strtotime($entrada)) continue;
                     $esp = $porTipo[$tipo][array_rand($porTipo[$tipo])];
                     $p = $placa($tipo);
-                    $calc = Parking::calcular($entrada, $salida, Parking::tarifa($sid, $tipo));
-                    Db::exec(
-                        "INSERT INTO movimientos (sede_id, espacio_id, placa, tipo_vehiculo, entrada_at, salida_at, minutos, valor, detalle_cobro, metodo_pago, estado, origen, usuario_entrada_id, usuario_salida_id)
-                         VALUES (?,?,?,?,?,?,?,?,?,?, 'finalizado', ?, ?, ?)",
-                        [$sid, $esp, $p, $tipo, $entrada, $salida, $calc['minutos'], $calc['valor'], $calc['detalle'], $metodos[array_rand($metodos)], mt_rand(0, 2) ? 'app' : 'web', $op, $op]
-                    );
+                    $calc = Parking::calcular($entrada, $salida, $tarifas[$tipo]);
+                    $historicos[] = [$sid, $esp, $p, $tipo, $entrada, $salida, $calc['minutos'], $calc['valor'], $calc['detalle'], $metodos[array_rand($metodos)], 'finalizado', mt_rand(0, 2) ? 'app' : 'web', $op, $op];
                 }
             }
+            self::enBloque('movimientos', ['sede_id', 'espacio_id', 'placa', 'tipo_vehiculo', 'entrada_at', 'salida_at', 'minutos', 'valor', 'detalle_cobro', 'metodo_pago', 'estado', 'origen', 'usuario_entrada_id', 'usuario_salida_id'], $historicos);
 
             // Vehículos dentro ahora mismo
             $ahora = time();

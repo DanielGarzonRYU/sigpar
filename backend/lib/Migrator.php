@@ -15,6 +15,8 @@ final class Migrator
         $flag = sys_get_temp_dir() . '/sigpar-migrated-' . md5(filemtime($schema) . filesize($schema) . Env::get('DB_HOST', '') . Env::get('DB_NAME', ''));
         if (is_file($flag)) return;
 
+        // La primera vez crea las tablas (y los datos de demostración): puede tardar más que una petición normal
+        @set_time_limit(0);
         $lock = fopen($flag . '.lock', 'c');
         flock($lock, LOCK_EX);
         try {
@@ -63,9 +65,10 @@ final class Migrator
             );
         }
 
-        if (Env::bool('DEMO_DATA') && (int) Db::value('SELECT COUNT(*) FROM sedes') === 0) {
+        if (Env::bool('DEMO_DATA')) {
             require_once __DIR__ . '/../database/demo.php';
-            DemoData::seed();
+            if (DemoData::incompleta()) DemoData::limpiarIncompleta();
+            if ((int) Db::value('SELECT COUNT(*) FROM sedes') === 0) DemoData::seed();
         }
     }
 
